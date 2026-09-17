@@ -1,0 +1,5 @@
+description,amountPence,isIncome
+Salary,300000,true
+Rent,100000,false
+Groceries,50000,false
+Freelance Work,150000,true

@@ -1,13 +1,23 @@
-import type { Transaction } from "./reports/summary.js";
+import { readFile } from "node:fs/promises";
 import { summariseTransactions } from "./reports/summary.js";
+import { parseTransactions } from "./reports/parse-transactions.js";
 
-const transactions: Transaction[] = [
-    {description: "Salary", amountPence: 300000, isIncome: true},
-    {description: "Rent", amountPence: 100000, isIncome: false},
-    {description: "Groceries", amountPence: 50000, isIncome: false},
-    {description: "Freelance Work", amountPence: 150000, isIncome: true}
-];
+try {
 
-const result = summariseTransactions(transactions);
+    const csvText = await readFile("samples/transactions.csv", "utf8");
+    const transactions = parseTransactions(csvText);
+    const importedTransactionSummary = summariseTransactions(transactions);
+    console.log("All transaction rows passed validation");
+    console.log(importedTransactionSummary);
 
-console.log(result);
+} catch (error) {
+
+    if (error instanceof Error) {
+        console.error(error.message);
+    } else { 
+        console.error("An unexpected problem occured");
+    }
+
+    process.exitCode = 1;
+    
+}
