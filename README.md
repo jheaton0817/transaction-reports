@@ -89,3 +89,39 @@ Finally "An unexpected error has occured" message printed runs when the caught v
 I changed the package.json file to firstly to add "build": "tsc" into the scripts section, then added the arguments to the "test" to have npm run build and then if it compiles it runs the tests at dist/reports/parse-transactions.test.js and dist/reports/summary.test.js - this changes the current command npx tsc to become npm test to both compile and run the tests.
 
 The && is useful in the "test" because if a test runs when compilation failes, files from a previous successful build can still be there, meaning that running those tests could give me six passes while checking yesterday's code instead of my latest changes.
+
+# ADDED ERROR TESTS
+
+I have added 6 automated tests into parse-transactions.test.ts and summary.test.ts, they do the following:
+
+parseOutputTest:
+
+- This makes sure that the parsed output when running the parseTransactions function outputs it in the expected format, I created a const called 'expected' and used assert.deepEqual(parsedCSV, expected); to make sure that the output of the parseTransactions function equals the expected output.
+
+incomeErrorTest
+
+- I used a helper function incomeErrorHelper which firstly runs parseTransactions on a csvString I created which contains the wrong spelling in the isIncome section, this is so that we expect an error message that I created, the incomeErrorTest then uses assert.throws to firstly call incomeErrorHelper and to check that it throws the expected Error message matching the error message pre-written.
+
+emptyCSVErrorTest
+
+- This test again uses a emptyCSVHelper function which simply runs parseTransactions on an empty string (""), so we are expecting the empty CSV error message, it is then called using assert.throws to validate that when the helper function is called it throws the error matching the empty CSV error message
+
+All of these 3 above error tests are then run using test("expected error message", functionName); 
+
+This test call for each is what provides the expected error thrown message when the relevant function is called.
+
+There is then 3 tests inside of summary.test.ts
+
+checkSummary
+
+- This test is used to verify that the function adds multiple incomes and expenses correctly when called. I create a const array inside the function containing multiple transactions, and then call the summariseTransactions function, I then use assert.equal(transactionSummary.relevantColumn, expected value); to check that the outputs of each column are equal to the expected values.
+
+checkEmptySummary
+
+- This test declares an empt transactions array inside of the function and then calls the summarisetranslctions function, once again it uses assert.equal per column to make sure it meets the expected values of 0 per column due to the array being empty
+
+checkNegativeBalance
+
+- This test declares a const with and array of transactions that are only expenses (isIncome is false), this then runs summarisetranslctions function and calls assert.equal per column to test the expected values and the overall expected balance as negative.
+
+All 3 test are then ran using the test("what this test does/checks", functionName);
