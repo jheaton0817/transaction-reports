@@ -71,7 +71,7 @@ My program now:
 
     Reads a file --> Parses its rows --> Checks the fields --> Builds typed transactions --> Calculates a summary
 
-# ADDED ERRORS CHECKING - CURRENT
+# ADDED ERRORS CHECKING - LEARNING HISTORY
 
 Firstly I removed the bulk of cli.ts which was the parsing and validation code and wrapped it in a new function called parseTransactions into a file parse-transactions.ts.
 
@@ -89,13 +89,13 @@ In cli.ts I have wrapped everything from the file being read, calling both parse
 
 Finally "An unexpected error has occured" message printed runs when the caught value isn't an Error object.
 
-# CONFIGURING NPM TEST
+# CONFIGURING NPM TEST - LEARNING HISTORY
 
 I changed the package.json file to firstly to add "build": "tsc" into the scripts section, then added the arguments to the "test" to have npm run build and then if it compiles it runs the tests at dist/reports/parse-transactions.test.js and dist/reports/summary.test.js - this changes the current command npx tsc to become npm test to both compile and run the tests.
 
 The && is useful in the "test" because if a test runs when compilation failes, files from a previous successful build can still be there, meaning that running those tests could give me six passes while checking yesterday's code instead of my latest changes.
 
-# ADDED ERROR TESTS
+# ADDED ERROR TESTS - LEARNING HISTORY
 
 I have added 6 automated tests into parse-transactions.test.ts and summary.test.ts, they do the following:
 
@@ -130,3 +130,39 @@ checkNegativeBalance
 - This test declares a const with and array of transactions that are only expenses (isIncome is false), this then runs summarisetranslctions function and calls assert.equal per column to test the expected values and the overall expected balance as negative.
 
 All 3 test are then ran using the test("what this test does/checks", functionName);
+
+# ADD LOCAL HTTP SERVER WITH A JSON HEALTH ENDPOINT
+
+Express is a function I can call to create my app.
+
+Request and Response are TypeScript descriptions of the objects that the handler receives.
+
+When a request arrives, Express supplies the actual objects:
+- request contains information about what the client sent
+- response gives methods for sending an answer
+
+const app = express();
+
+The above calls express() and stores the resulting application in app, I can then use app to register routes and start listening.
+
+The healthCheck function takes the arguments request and response in their respective types and uses response.json(...) to send JSON to the client. Receiving this response shows that the server is reachable and can handle this route.
+
+app.get("/health", healthCheck);
+
+This means when a GET request arrives for /health, call the function I created called healthCheck.
+
+Listening on an address and a port have different jobs:
+
+127.0.0.1 means this computer - loopback address
+3000 is the port that the server listens on.
+
+The best way I learned to think about it is that imagine the address is identifying the building and the port is identifying a door into it.
+
+The commands to start the server are:
+
+npm run build
+node dist/server.js
+
+Then visit the health endpoint http://localhost:3000/health and you should see the JSON response, such as {"status":"OK"}
+
+Finally, press Control+C in the servers terminal to stop it.
