@@ -83,3 +83,9 @@ The function works as follows:
 In cli.ts I have wrapped everything from the file being read, calling both parseTransactions and summariseTransactions functions, as well as both the successful output message and the Transaction summary with totals printed after successful completion all within a try catch error, this was to make the error display message cli clearer and a thrown error skips the remaining statements in try and moves to catch, also added a process.exitCode = 1; so when echo $? is run it outputs 1 for an error and 0 if successfully completed.
 
 Finally "An unexpected error has occured" message printed runs when the caught value isn't an Error object.
+
+# CONFIGURING NPM TEST
+
+I changed the package.json file to firstly to add "build": "tsc" into the scripts section, then added the arguments to the "test" to have npm run build and then if it compiles it runs the tests at dist/reports/parse-transactions.test.js and dist/reports/summary.test.js - this changes the current command npx tsc to become npm test to both compile and run the tests.
+
+The && is useful in the "test" because if a test runs when compilation failes, files from a previous successful build can still be there, meaning that running those tests could give me six passes while checking yesterday's code instead of my latest changes.

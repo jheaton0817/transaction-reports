@@ -4,7 +4,8 @@
   "description": "The app will allow a user to sign in, upload a CSV of transactions, it will process it in the background and send an email of the summary report, as well as a dashboard filled with past uploads.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run build && node --test dist/reports/parse-transactions.test.js dist/reports/summary.test.js",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
