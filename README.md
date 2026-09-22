@@ -6,7 +6,12 @@ The app will allow a user to sign in, upload a CSV of transactions, it will proc
 
 Install npm ci for dependencies on a fresh checkout followed by npx tsc to compile
 
-Save a csv to samples/transactions.csv  and run dist/cli.js
+Save a csv to samples/ and then to run the program please input a command in the following layout:
+
+npm run build
+node dist/cli.js samples/your-file-name.csv
+
+The last argument selects the CSV file, relative pths are resolved from the directory where you run the command.
 
 Header must exactly match: description,amountPence,isIncome
 
