@@ -4,7 +4,14 @@ import { parseTransactions } from "./reports/parse-transactions.js";
 
 try {
 
-    const csvText = await readFile("samples/transactions.csv", "utf8");
+    const filePath = process.argv[2];
+    
+    if (filePath === undefined) {
+
+        throw new Error("Please follow the command layout node dist/cli.js your-csv-path");
+    }
+
+    const csvText = await readFile(filePath, "utf8");
     const transactions = parseTransactions(csvText);
     const importedTransactionSummary = summariseTransactions(transactions);
     console.log("All transaction rows passed validation");
