@@ -87,3 +87,5 @@ Finally "An unexpected error has occured" message printed runs when the caught v
 # CONFIGURING NPM TEST
 
 I changed the package.json file to firstly to add "build": "tsc" into the scripts section, then added the arguments to the "test" to have npm run build and then if it compiles it runs the tests at dist/reports/parse-transactions.test.js and dist/reports/summary.test.js - this changes the current command npx tsc to become npm test to both compile and run the tests.
+
+The && is useful in the "test" because if a test runs when compilation failes, files from a previous successful build can still be there, meaning that running those tests could give me six passes while checking yesterday's code instead of my latest changes.
