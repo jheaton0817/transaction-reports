@@ -166,3 +166,46 @@ node dist/server.js
 Then visit the health endpoint http://localhost:3000/health and you should see the JSON response, such as {"status":"OK"}
 
 Finally, press Control+C in the servers terminal to stop it.
+
+# Style the CSV submission page and document the interface
+
+I moved onto adding an app.js, index.html and styles.css files:
+
+HTML - this defines the page's contents and controls.
+CSS - Controls its appearance and layout
+JS - Dictates how the page should act
+
+I used Flexbox in the styles.css to stack the form controls.
+
+Browser JavaScript submits the CSV and displays the server's response.
+
+In app.js I firstly got the relevant elements and stored them in const variables using the document.getElementById function. This finds an element in the browser's current page.
+
+Then I created an async function called handleSubmit. The function is an async function as it allows then to use await, await pauses that function until the awaited operation finishes.
+
+I firstly made sure that if the uploaded file was undefined, that it would print the message "Please choose a CSV file" and return without continuing.
+
+Once this check was passed, I updated the uploadStatus text using uploadStatus.textContent = ("updated to X status"); to say that it is calculating the summary I read the files text using await selectedFile.text() and stored it in a variable called csvText
+
+I sent the CSV text to the server's /reports/summary endpoint using fetch. I then used await response.json() to read and reply as a JavaScript object. I then used a !response.ok check so an unsuccessful response displays the server's error message instead of totals.
+
+This result can then be indexed as it outputs what I have had in previous renditions but in my CLI such as result.totalIncomePence.
+
+Finally, before displaying the returned values, I used a money formatter by firstly declaring the variable:
+
+const moneyFormatter = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP"
+});
+
+Then created a function called formatPence which takes the argument of amountPence and returns the total converted into pounds by firstly dividing by 100 and then using the moneyFormatter.format on the pence/100 value and then return that formatted string of e.g. ("12.50").
+
+Lastly I used an empty summary-result id on the <p> inside my index.html file and used summaryResult.textContent = (""); in order to replace the text and display the final outputted values.
+
+With the core functionality now in place, I created a styles.css file and firstly made the body use a certain font, background-color, color and then margins and padding.
+
+Then I gave main a max-width of 680px, this limits how wide the content can go. margin: 0 auto; this was so that no matter the size of the browser it would auto adjust to centralise on the page.
+
+I then edited the form in styles.css, most notably giving it display: flex which enables flexbox, and then flex-direction: column in order to stack it vertically.
+
+Then made the CTA button stand out by making it blue and rounding the corners.
