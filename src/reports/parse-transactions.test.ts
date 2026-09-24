@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseTransactions } from "./parse-transactions.js";
 import type { Transaction } from "./summary.js";
+import { CsvValidationError } from "./csv-validation-error.js";
 
 function parseOutputTest() { 
 
@@ -52,9 +53,29 @@ function emptyCSVErrorTest() {
 
 }
 
+function malformedCsvHelper() {
+
+    const malformedCsvString: string = `description,amountPence,isIncome
+"Salary,150000,true`;
+    
+    parseTransactions(malformedCsvString);
+
+}
+
+function testMalformedCsv() {
+
+    assert.throws(
+        malformedCsvHelper,
+        CsvValidationError
+    );
+
+}
+
 
 test("Testing the output of the parsed CSV contents", parseOutputTest);
 
 test("rejects an invalid income flag", incomeErrorTest);
 
 test("rejects an empty CSV", emptyCSVErrorTest);
+
+test("rejects an unclosed CSV quote with a validation error", testMalformedCsv);

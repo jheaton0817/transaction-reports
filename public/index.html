@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>CSV Transaction Processor</title>
+        <script src="/app.js" defer></script>
+    </head>
+    <body>
+        <h1>CSV Transaction Processor</h1>
+        <p>Upload your transaction CSV to see your total income, expenses and balance.</p>
+        <form id="upload-csv-file">
+            <label for="transaction-file">Submit your CSV</label>
+            <input type="file" id="transaction-file" accept=".csv" required>
+            <button type="submit">Calculate Summary</button>
+        </form>
+        <p id="upload-status">Choose a CSV to begin.</p>
+        <p id="summary-result"></p>
+    </body>
+</html>
