@@ -20,10 +20,12 @@
   },
   "homepage": "https://github.com/jheaton0817/transaction-reports#readme",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.20.3",
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "csv-parse": "^7.0.2"
+    "csv-parse": "^7.0.2",
+    "express": "^5.2.1"
   }
 }

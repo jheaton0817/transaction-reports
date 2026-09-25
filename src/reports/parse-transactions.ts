@@ -1,28 +1,29 @@
 import type { Transaction } from "./summary.js";
-import { parse } from "csv-parse/sync";
+import { parse, CsvError } from "csv-parse/sync";
+import { CsvValidationError } from "./csv-validation-error.js";
 
 function validateHeaders(headers: string[]): string[] {
 
     if (!(headers.length === 3)) {
 
-        throw new Error("The file must have 3 headers");
+        throw new CsvValidationError("The file must have 3 headers");
     }
 
     if (headers[0] !== "description") {
 
-        throw new Error("Header 1 name doesn't match 'description'");
+        throw new CsvValidationError("Header 1 name doesn't match 'description'");
 
     }
 
     if (headers[1] !== "amountPence") {
 
-        throw new Error("Header 2 name doesn't match 'amountPence'");
+        throw new CsvValidationError("Header 2 name doesn't match 'amountPence'");
 
     }
     
     if (headers[2] !== "isIncome") {
 
-        throw new Error("Header 3 name doesn't match 'isIncome'");
+        throw new CsvValidationError("Header 3 name doesn't match 'isIncome'");
 
     }
 
@@ -33,14 +34,34 @@ export function parseTransactions(csvText: string): Transaction[] {
 
     const transactions: Transaction[] = [];
 
-    const rows = parse(csvText, {
+    let rows: unknown[]; 
+    
+    try {
+        
+        rows = parse(csvText, {
         columns: validateHeaders,
         skip_empty_lines: true, 
-    });
+        });
+
+    }
+
+    catch(error) {
+
+        if((error instanceof CsvError) && (error.code === "CSV_QUOTE_NOT_CLOSED")) {
+
+            throw new CsvValidationError("CSV quotation mark isn't closed");
+        }
+        else {
+
+            throw error;
+        }
+    }
 
     if (rows.length === 0) {
 
-        throw new Error("The CSV contains no transactions");
+        const problem = new CsvValidationError("The CSV contains no transactions");
+
+        throw problem;
 
     }
 
@@ -48,55 +69,55 @@ export function parseTransactions(csvText: string): Transaction[] {
 
     if ((typeof row) !== "object" || row === null) {
 
-        throw new Error("row type not an object");
+        throw new CsvValidationError("row type not an object");
 
     }
 
     if (!("isIncome" in row)) {
 
-        throw new Error("isIncome isn't present");
+        throw new CsvValidationError("isIncome isn't present");
 
     }
     
     if(!(row.isIncome === "true" || row.isIncome === "false")) {
 
-        throw new Error("Please check spelling of true or false in column isIncome");
+        throw new CsvValidationError("Please check spelling of true or false in column isIncome");
     
     }
 
     if (!("description" in row)) {
 
-        throw new Error("Description is not present");
+        throw new CsvValidationError("Description is not present");
 
     }
 
     if ((typeof row.description) !== "string") {
 
-        throw new Error("Make sure description is a string");
+        throw new CsvValidationError("Make sure description is a string");
 
     }
 
     if (row.description.trim() === "") {
 
-        throw new Error("Description must have a value");
+        throw new CsvValidationError("Description must have a value");
 
     }
 
     if (!("amountPence" in row)) {
 
-        throw new Error("Amount in Pence must be present");
+        throw new CsvValidationError("Amount in Pence must be present");
 
     }
 
     if ((typeof row.amountPence) !== "string") {
 
-        throw new Error("Raw value of amount is not a string");
+        throw new CsvValidationError("Raw value of amount is not a string");
 
     }
 
     if (row.amountPence.trim() === "") {
 
-        throw new Error("Amount field must not be blank");
+        throw new CsvValidationError("Amount field must not be blank");
 
     }
 
@@ -104,13 +125,13 @@ export function parseTransactions(csvText: string): Transaction[] {
 
     if (!(Number.isSafeInteger(amountPenceNumber))) {
 
-        throw new Error("Number must be a safe integer");
+        throw new CsvValidationError("Number must be a safe integer");
 
     }
 
     if (amountPenceNumber <= 0) {
 
-        throw new Error("Amount must be greater than 0");
+        throw new CsvValidationError("Amount must be greater than 0");
 
     }
 

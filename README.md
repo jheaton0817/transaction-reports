@@ -71,7 +71,7 @@ My program now:
 
     Reads a file --> Parses its rows --> Checks the fields --> Builds typed transactions --> Calculates a summary
 
-# ADDED ERRORS CHECKING - CURRENT
+# ADDED ERRORS CHECKING - LEARNING HISTORY
 
 Firstly I removed the bulk of cli.ts which was the parsing and validation code and wrapped it in a new function called parseTransactions into a file parse-transactions.ts.
 
@@ -89,13 +89,13 @@ In cli.ts I have wrapped everything from the file being read, calling both parse
 
 Finally "An unexpected error has occured" message printed runs when the caught value isn't an Error object.
 
-# CONFIGURING NPM TEST
+# CONFIGURING NPM TEST - LEARNING HISTORY
 
 I changed the package.json file to firstly to add "build": "tsc" into the scripts section, then added the arguments to the "test" to have npm run build and then if it compiles it runs the tests at dist/reports/parse-transactions.test.js and dist/reports/summary.test.js - this changes the current command npx tsc to become npm test to both compile and run the tests.
 
 The && is useful in the "test" because if a test runs when compilation failes, files from a previous successful build can still be there, meaning that running those tests could give me six passes while checking yesterday's code instead of my latest changes.
 
-# ADDED ERROR TESTS
+# ADDED ERROR TESTS - LEARNING HISTORY
 
 I have added 6 automated tests into parse-transactions.test.ts and summary.test.ts, they do the following:
 
@@ -130,3 +130,90 @@ checkNegativeBalance
 - This test declares a const with and array of transactions that are only expenses (isIncome is false), this then runs summarisetranslctions function and calls assert.equal per column to test the expected values and the overall expected balance as negative.
 
 All 3 test are then ran using the test("what this test does/checks", functionName);
+
+# ADD LOCAL HTTP SERVER WITH A JSON HEALTH ENDPOINT
+
+Express is a function I can call to create my app.
+
+Request and Response are TypeScript descriptions of the objects that the handler receives.
+
+When a request arrives, Express supplies the actual objects:
+- request contains information about what the client sent
+- response gives methods for sending an answer
+
+const app = express();
+
+The above calls express() and stores the resulting application in app, I can then use app to register routes and start listening.
+
+The healthCheck function takes the arguments request and response in their respective types and uses response.json(...) to send JSON to the client. Receiving this response shows that the server is reachable and can handle this route.
+
+app.get("/health", healthCheck);
+
+This means when a GET request arrives for /health, call the function I created called healthCheck.
+
+Listening on an address and a port have different jobs:
+
+127.0.0.1 means this computer - loopback address
+3000 is the port that the server listens on.
+
+The best way I learned to think about it is that imagine the address is identifying the building and the port is identifying a door into it.
+
+The commands to start the server are:
+
+npm run build
+node dist/server.js
+
+Then visit the health endpoint http://localhost:3000/health and you should see the JSON response, such as {"status":"OK"}
+
+Finally, press Control+C in the servers terminal to stop it.
+
+# Style the CSV submission page and document the interface
+
+I moved onto adding an app.js, index.html and styles.css files:
+
+HTML - this defines the page's contents and controls.
+CSS - Controls its appearance and layout
+JS - Dictates how the page should act
+
+I used Flexbox in the styles.css to stack the form controls.
+
+Browser JavaScript submits the CSV and displays the server's response.
+
+In app.js I firstly got the relevant elements and stored them in const variables using the document.getElementById function. This finds an element in the browser's current page.
+
+Then I created an async function called handleSubmit. The function is an async function as it allows then to use await, await pauses that function until the awaited operation finishes.
+
+I firstly made sure that if the uploaded file was undefined, that it would print the message "Please choose a CSV file" and return without continuing.
+
+Once this check was passed, I updated the uploadStatus text using uploadStatus.textContent = ("updated to X status"); to say that it is calculating the summary I read the files text using await selectedFile.text() and stored it in a variable called csvText
+
+I sent the CSV text to the server's /reports/summary endpoint using fetch. I then used await response.json() to read and reply as a JavaScript object. I then used a !response.ok check so an unsuccessful response displays the server's error message instead of totals.
+
+This result can then be indexed as it outputs what I have had in previous renditions but in my CLI such as result.totalIncomePence.
+
+Finally, before displaying the returned values, I used a money formatter by firstly declaring the variable:
+
+const moneyFormatter = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP"
+});
+
+Then created a function called formatPence which takes the argument of amountPence and returns the total converted into pounds by firstly dividing by 100 and then using the moneyFormatter.format on the pence/100 value and then return that formatted string of e.g. ("12.50").
+
+Lastly I used an empty summary-result id on the <p> inside my index.html file and used summaryResult.textContent = (""); in order to replace the text and display the final outputted values.
+
+With the core functionality now in place, I created a styles.css file and firstly made the body use a certain font, background-color, color and then margins and padding.
+
+Then I gave main a max-width of 680px, this limits how wide the content can go. margin: 0 auto; this was so that no matter the size of the browser it would auto adjust to centralise on the page.
+
+I then edited the form in styles.css, most notably giving it display: flex which enables flexbox, and then flex-direction: column in order to stack it vertically.
+
+Then made the CTA button stand out by making it blue and rounding the corners.
+
+# ADDING BUTTON LOADING AND REQUEST FAILURES IN THE BROWSER
+
+I gave the button on the form an id of submit-button, and saved it in a variable submitButton in app.js by using the document.getElementById.
+
+Firstly after the function assures that the uploaded file isn't undefined, I set the button to be disabled ad update its' textContent to say Calculating Summary... , this is to display to the user that something is happening and doesn't allow spam click of it because they think that it doesn't work.
+
+Then the functions main body is encased in a try block, with a catch(error) to display to try again if anything unexpected goes wrong, lastly I added a new finally block under the try and catch, and this is to reset the button to not be disabled, and revert the text back, so that even if the program exits/returns early, it resets the disabled status and textContent.
