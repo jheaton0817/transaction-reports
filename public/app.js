@@ -6,6 +6,8 @@ const fileInput = document.getElementById("transaction-file");
 
 const summaryResult = document.getElementById("summary-result");
 
+const submitButton = document.getElementById("submit-button");
+
 const moneyFormatter = new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP"
@@ -26,32 +28,51 @@ async function handleSubmit(event) {
         return;
     }
 
-    const csvText = await selectedFile.text();
+    submitButton.disabled = true;
+    submitButton.textContent = ("Calculating...");
 
-    uploadStatus.textContent = ("Calculating Summary...");
+    try {
 
-    const response = await fetch ("/reports/summary", {
-        method: "POST",
-        headers: {
-            "Content-Type": "text/csv"
-        },
-        body: csvText
-    });
+        const csvText = await selectedFile.text();
 
-    const result = await response.json();
+        uploadStatus.textContent = ("Calculating Summary...");
 
-    console.log(result);
+        const response = await fetch ("/reports/summary", {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/csv"
+            },
+            body: csvText
+        });
 
-    if(!response.ok) {
+        const result = await response.json();
 
-        uploadStatus.textContent = (result.error);
+        if(!response.ok) {
 
-        return;
+            uploadStatus.textContent = (result.error);
+
+            return;
+
+        }
+
+        summaryResult.textContent = ("Income : " + formatPence(result.totalIncomePence) + " | " + "Expenses : " + formatPence(result.totalExpensesPence) + " | " + "Balance : " + formatPence(result.balancePence));
+        uploadStatus.textContent = ("Summary Ready");
 
     }
 
-    summaryResult.textContent = ("Income : " + formatPence(result.totalIncomePence) + " | " + "Expenses : " + formatPence(result.totalExpensesPence) + " | " + "Balance : " + formatPence(result.balancePence));
-    uploadStatus.textContent = ("Summary Ready");
+    catch(error) {
+
+        uploadStatus.textContent = ("Could not complete the request. Please try again.");
+
+    }
+
+    finally {
+
+        submitButton.disabled = false;
+
+        submitButton.textContent = ("Calculate Summary");
+        
+    }
 
 }
 

@@ -209,3 +209,11 @@ Then I gave main a max-width of 680px, this limits how wide the content can go. 
 I then edited the form in styles.css, most notably giving it display: flex which enables flexbox, and then flex-direction: column in order to stack it vertically.
 
 Then made the CTA button stand out by making it blue and rounding the corners.
+
+# ADDING BUTTON LOADING AND REQUEST FAILURES IN THE BROWSER
+
+I gave the button on the form an id of submit-button, and saved it in a variable submitButton in app.js by using the document.getElementById.
+
+Firstly after the function assures that the uploaded file isn't undefined, I set the button to be disabled ad update its' textContent to say Calculating Summary... , this is to display to the user that something is happening and doesn't allow spam click of it because they think that it doesn't work.
+
+Then the functions main body is encased in a try block, with a catch(error) to display to try again if anything unexpected goes wrong, lastly I added a new finally block under the try and catch, and this is to reset the button to not be disabled, and revert the text back, so that even if the program exits/returns early, it resets the disabled status and textContent.
