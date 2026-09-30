@@ -4,22 +4,67 @@ The app will allow a user to sign in, upload a CSV of transactions, it will proc
 
 # CURRENT BEHAVIOUR
 
-Install npm ci for dependencies on a fresh checkout followed by npx tsc to compile
+The app can now:
 
-Save a csv to samples/ and then to run the program please input a command in the following layout:
+- Read a transaction CSV from the terminal or browser
+- Check the CSV and calculate income, expenses and balance.
+- Save a report to PostgreSQL when a browser upload succeeds.
+- Display previous reports on the page, newest first.
+- Keep those reports after the Node server restarts.
+- Show loading, success, empty-history and failure messages.
+
+Each saved report contains the filename, income total, expense total and creation time. The balance is calculated when reports are read.
+
+The database does not currently store the original CSV or its individual transactions.
+
+Accounts, background processing and email are still planned.
+
+# INSTALL AND BUILD
+
+From the project folder, install dependencies on a fresh checkout:
+
+npm ci
+
+Compile the TypeScript:
 
 npm run build
+
+# RUN THE BROWSER APP
+
+The local PostgreSQL server must be running, the database and reports table must exist, and the connection settings must be in .env.
+
+Start the server from the project folder:
+
+node --env-file=.env dist/server.js
+
+Open:
+
+http://127.0.0.1:3000/
+
+Keep the server terminal running while using the page. Press Control+C to stop it.
+
+# RUN THE TERMINAL VERSION
+
 node dist/cli.js samples/your-file-name.csv
 
-The last argument selects the CSV file, relative pths are resolved from the directory where you run the command.
+The last argument chooses the file. Relative paths start from the folder where the command is run.
 
-Header must exactly match: description,amountPence,isIncome
+The terminal version calculates and prints a summary. It does not currently save a report to the database.
 
-Outputs an Error message if an error occurs, or if successful, will output a Successful validation message, along with the calculated:
+# CSV FORMAT
 
-    - totalIncomePence
-    - totalExpensesPence
-    - balancePence
+The header must match this exactly, including the order:
+
+description,amountPence,isIncome
+
+Amounts must be positive, safe whole numbers in pence.
+isIncome must contain true or false.
+
+# RUN THE AUTOMATED TESTS
+
+npm test
+
+This compiles the TypeScript first. If compilation succeeds, it runs the existing parsing and summary tests.
 
 # FIRST MILESTONE
 
@@ -131,7 +176,7 @@ checkNegativeBalance
 
 All 3 test are then ran using the test("what this test does/checks", functionName);
 
-# ADD LOCAL HTTP SERVER WITH A JSON HEALTH ENDPOINT
+# ADD LOCAL HTTP SERVER WITH A JSON HEALTH ENDPOINT - LEARNING HISTORY
 
 Express is a function I can call to create my app.
 
@@ -167,7 +212,7 @@ Then visit the health endpoint http://localhost:3000/health and you should see t
 
 Finally, press Control+C in the servers terminal to stop it.
 
-# Style the CSV submission page and document the interface
+# Style the CSV submission page and document the interface - LEARNING HISTORY
 
 I moved onto adding an app.js, index.html and styles.css files:
 
@@ -210,10 +255,317 @@ I then edited the form in styles.css, most notably giving it display: flex which
 
 Then made the CTA button stand out by making it blue and rounding the corners.
 
-# ADDING BUTTON LOADING AND REQUEST FAILURES IN THE BROWSER
+# ADDING BUTTON LOADING AND REQUEST FAILURES IN THE BROWSER - LEARNING HISTORY
 
 I gave the button on the form an id of submit-button, and saved it in a variable submitButton in app.js by using the document.getElementById.
 
 Firstly after the function assures that the uploaded file isn't undefined, I set the button to be disabled ad update its' textContent to say Calculating Summary... , this is to display to the user that something is happening and doesn't allow spam click of it because they think that it doesn't work.
 
 Then the functions main body is encased in a try block, with a catch(error) to display to try again if anything unexpected goes wrong, lastly I added a new finally block under the try and catch, and this is to reset the button to not be disabled, and revert the text back, so that even if the program exits/returns early, it resets the disabled status and textContent.
+
+# SAVING REPORTS AND SHOWING THEIR HISTORY - LEARNING HISTORY
+
+# Why I added a database
+
+Before this work, the app could calculate a summary and show it, but it could not remember previous reports.
+
+A variable holds information while a program is running. PostgreSQL stores information separately, so stopping my Node server does not remove the saved reports.
+
+PostgreSQL is the database server.
+transaction_reports is the database I created.
+reports is a table inside that database.
+
+In my reports table, one row represents one processed CSV, not one transaction inside the CSV.
+
+Uploading the same file twice currently creates two separate reports.
+
+# The reports table
+
+I saved the table definition in:
+
+    db/migrations/001_create_reports.sql
+
+This is a migration: a file containing instructions for changing the database structure.
+
+Keeping this file in Git means I have the instructions needed to create the table on another computer.
+
+The table contains:
+
+- id: a unique whole number generated by PostgreSQL.
+- file_name: the uploaded file's name.
+- total_income_pence: the income total.
+- total_expenses_pence: the expense total.
+- created_at: when the report was created.
+
+PRIMARY KEY identifies each row uniquely.
+
+NOT NULL means a value cannot be missing. It does not stop a text value from being an empty string.
+
+CHECK adds a rule. My money checks prevent negative income and expense totals. Zero is allowed because a report could contain only income or only expenses.
+
+BIGINT stores large whole numbers. Money stays in whole pence instead of decimal pounds.
+
+TIMESTAMPTZ stores a moment in time with time zone handling.
+
+DEFAULT CURRENT_TIMESTAMP lets PostgreSQL supply the creation time when I do not provide one.
+
+I do not store the balance separately. I calculate:
+
+    total_income_pence - total_expenses_pence
+
+This avoids storing a third total that could disagree with the other two.
+
+# The SQL I learned
+
+CREATE TABLE builds the table structure.
+
+INSERT INTO adds a row.
+
+SELECT reads information.
+
+WHERE chooses only rows matching a condition.
+
+ORDER BY sorts the results.
+
+DESC means descending. For creation times, this puts newer reports first.
+
+AS gives a result column a name. For example:
+
+    total_income_pence - total_expenses_pence AS balance_pence
+
+This calculates the balance and labels it balance_pence in the returned result. It does not add a stored column to the table.
+
+If a SELECT query finds nothing, it returns zero rows. That is not automatically an error.
+
+# Connecting Node to PostgreSQL
+
+psql lets me talk to PostgreSQL manually from the terminal.
+
+My Node app uses a library called pg to talk to PostgreSQL from code. This kind of library is called a database driver.
+
+I installed:
+
+    npm install pg
+    npm install --save-dev @types/pg
+
+pg handles the communication when the program runs.
+
+@types/pg gives TypeScript information about how to use the library.
+
+In src/database.ts, I created and exported one Pool.
+
+A connection is a way for the app to talk to the database. A pool manages connections and reuses them, rather than setting up a new connection for every query.
+
+The app shares this pool.
+
+My small connection-check script calls pool.end() when finished. The web server keeps the pool available because more requests may arrive.
+
+# Connection settings and .env
+
+Environment variables are settings supplied to the program separately from its code.
+
+My local .env file contains:
+
+    PGHOST=127.0.0.1
+    PGPORT=5432
+    PGDATABASE=transaction_reports
+    PGUSER=josh
+
+PGHOST identifies the computer running PostgreSQL.
+PGPORT identifies the port PostgreSQL listens on.
+PGDATABASE chooses the database.
+PGUSER chooses the PostgreSQL user.
+
+These settings describe my local setup. Another computer may need different values.
+
+Creating .env does not load it automatically. This command tells Node to load it:
+
+    node --env-file=.env dist/server.js
+
+.env is ignored by Git because local settings can differ between computers and may contain passwords.
+
+Git saves my code and migration files. It does not save the report rows inside PostgreSQL.
+
+# Keeping report SQL in one place
+
+I created:
+
+    src/reports/report-repository.ts
+
+A repository here means a place containing the code that reads and saves database records.
+
+It contains:
+
+- listReports(): reads saved reports, newest first.
+- saveReport(): saves one filename and its calculated totals.
+
+This keeps report SQL out of the HTTP handlers. The server asks these functions to do the database work.
+
+Neither function needs to import Express.
+
+# async, await and Promise
+
+Database work takes time, so these functions are async.
+
+An async function returns a Promise: a result that may become available later, or fail.
+
+await waits for that operation inside the current function. It does not freeze the whole server.
+
+listReports() returns Promise<ReportRow[]>.
+
+This means: if it succeeds, it provides an array of report rows.
+
+saveReport() returns Promise<void>.
+
+This means: if it succeeds, it finishes without returning a useful value. I can still await it to make sure saving finishes before continuing.
+
+If an awaited operation fails, it throws at that point and can be handled by catch.
+
+# Types describe values; they do not change them
+
+ReportRow describes the shape I expect from my database query.
+
+pool.query<ReportRow>(...) tells TypeScript what one returned row should look like.
+
+This helps TypeScript check my code, but it does not check the actual database response at runtime.
+
+The driver returns my BIGINT money values as strings, such as "450000".
+
+Changing the TypeScript description to number would not convert that string.
+
+Number("450000") performs a real conversion.
+
+In the browser, I convert the money strings with Number(), then use formatPence() to display pounds.
+
+The driver gives Node a Date object for created_at. When the server sends JSON, that becomes a date string.
+
+A timestamp ending in Z is shown in UTC. Different time zone displays can describe the same moment.
+
+# Saving values safely with placeholders
+
+saveReport() uses $1, $2 and $3 in its SQL.
+
+The actual filename and totals are supplied separately in an array.
+
+$1 matches the first array item.
+$2 matches the second.
+$3 matches the third.
+
+This is a parameterized query.
+
+It keeps the SQL instructions separate from the supplied values. A filename containing an apostrophe is handled as data, rather than being joined into the SQL instructions.
+
+PostgreSQL supplies the ID and creation time automatically.
+
+# Sending the filename from the browser
+
+The browser was already sending the CSV text as the request body.
+
+I added an X-File-Name header to send the filename too.
+
+The body contains the CSV contents. The header contains extra information about the request.
+
+The browser uses encodeURIComponent(selectedFile.name) to encode the filename.
+
+The server reads the header with request.get("X-File-Name"), then uses decodeURIComponent() to recover the original text.
+
+Encoding is not encryption and is not validation.
+
+The server checks that the header is present and that the decoded filename is not blank after trimming.
+
+# Saving before sending success
+
+The browser upload now follows this order:
+
+    Check the filename
+    → Parse and validate the CSV
+    → Calculate the totals
+    → Wait for saveReport()
+    → Send the summary to the browser
+
+receiveCsv is async because it waits for saving.
+
+Saving happens before the success response. If saving fails, the success response is skipped.
+
+The terminal CSV command still only calculates a summary.
+
+# Reading history through HTTP
+
+GET /reports calls listReports() and sends the returned rows as JSON.
+
+GET means the client is asking to read information.
+
+Opening /reports does not save anything. It only reads existing reports.
+
+The browser calls this endpoint using fetch("/reports").
+
+fetch defaults to GET when no method is specified.
+
+response.json() reads the response body and turns the JSON into JavaScript values.
+
+# Building the history list on the page
+
+My HTML contains:
+
+- A heading for previous reports.
+- A history-status paragraph for messages.
+- An empty report-history list.
+
+loadReports() fetches the saved reports and builds the list.
+
+It clears the existing list before adding items. Otherwise, loading history again would add another copy of every displayed item.
+
+A for...of loop works through the reports.
+
+For each report:
+
+- document.createElement("li") creates a list item.
+- textContent fills it with the filename and formatted totals.
+- appendChild() places it inside the list on the page.
+
+Creating an element does not automatically display it. It must be added to the page.
+
+textContent displays the filename as text, not as HTML.
+
+loadReports() runs when the page opens and after a successful upload.
+
+This means the history updates without needing a full page refresh.
+
+# Loading, failure and empty states
+
+loadReports() first shows a loading message.
+
+Inside try, it fetches the reports, checks response.ok, reads the JSON and builds the list.
+
+fetch does not automatically throw just because the server returns HTTP 500. Checking response.ok lets me detect an unsuccessful HTTP response.
+
+If loading fails, catch displays a history error.
+
+The success message belongs inside try, after the work succeeds. Placing it after catch would overwrite the error message.
+
+A failure to refresh history does not necessarily mean the upload failed. The report may already have been saved.
+
+loadReports() handles its own errors so it does not replace a successful upload message with an upload failure message.
+
+If reports.length is zero, the page says:
+
+    No reports yet. Upload a CSV to get started
+
+When an error is caught and not rethrown, the async function can finish normally. Its Promise can therefore be fulfilled even though the network request failed.
+
+# What I checked manually
+
+I checked that:
+
+- A browser upload creates a saved report.
+- The reports remain after restarting Node.
+- Newer reports appear first.
+- The page formats pence as pounds.
+- History updates after an upload without refreshing the page.
+- Stopping the server produces a history error message.
+- Restarting it allows history to load again.
+- An empty reports array produces the empty-history message.
+
+For the empty-state check, I temporarily replaced the fetched array with [] in browser code. I then restored the real response. This did not delete database records.
+
+My existing automated tests cover parsing and summary calculations. They do not yet automatically test the database or browser history.

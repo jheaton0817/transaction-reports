@@ -8,10 +8,67 @@ const summaryResult = document.getElementById("summary-result");
 
 const submitButton = document.getElementById("submit-button");
 
+const historyStatus = document.getElementById("history-status");
+
+const reportHistory = document.getElementById("report-history");
+
 const moneyFormatter = new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP"
 });
+
+async function loadReports() {
+
+    historyStatus.textContent = "Loading previous reports...";
+
+    try {
+    
+        const response = await fetch("/reports");
+
+        if(!response.ok) {
+
+            throw new Error("Could not load previous reports");
+        
+        }
+
+        const reports = await response.json();
+
+        reportHistory.textContent = "";
+
+        for(const report of reports) {
+
+            const item = document.createElement("li");
+
+            const incomePence = Number(report.total_income_pence);
+            const expensesPence = Number(report.total_expenses_pence);
+            const balancePence = Number(report.balance_pence);
+
+            item.textContent = report.file_name + " | Income: " + formatPence(incomePence) + " | Expenses: " + formatPence(expensesPence) + " | Balance: " + formatPence(balancePence);
+            reportHistory.appendChild(item);
+
+        }
+
+        if(reports.length === 0) {
+
+            historyStatus.textContent = "No reports yet. Upload a CSV to get started";
+        
+        }
+
+        else {
+
+            historyStatus.textContent = "Previous reports loaded";
+
+        }
+
+    }
+
+    catch(error) {
+
+        historyStatus.textContent = "Could not load previous reports. Please try again.";
+
+    }
+
+}
 
 async function handleSubmit(event) {
 
@@ -40,7 +97,8 @@ async function handleSubmit(event) {
         const response = await fetch ("/reports/summary", {
             method: "POST",
             headers: {
-                "Content-Type": "text/csv"
+                "Content-Type": "text/csv",
+                "X-File-Name": encodeURIComponent(selectedFile.name)
             },
             body: csvText
         });
@@ -57,6 +115,7 @@ async function handleSubmit(event) {
 
         summaryResult.textContent = ("Income : " + formatPence(result.totalIncomePence) + " | " + "Expenses : " + formatPence(result.totalExpensesPence) + " | " + "Balance : " + formatPence(result.balancePence));
         uploadStatus.textContent = ("Summary Ready");
+        await loadReports();
 
     }
 
@@ -86,3 +145,5 @@ function formatPence(amountPence) {
 }
 
 transactionForm.addEventListener("submit", handleSubmit);
+
+loadReports();
